@@ -4,6 +4,8 @@ main: com.corosus.watut.paper.WatutPaperPlugin
 api-version: '26.1'
 author: Corosus
 description: Server plugin support for the WATUT client mod (Paper / Java 25)
+folia-supported: true
+softdepend: [CoroUtil]
 commands:
   watut:
     description: Main command for WATUT plugin

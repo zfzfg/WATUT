@@ -30,23 +30,29 @@ for /f "tokens=2 delims==" %%V in ('findstr /b "coroutil_version=" "%ROOT%gradle
 for /f "tokens=2 delims==" %%V in ('findstr /b "mod_version=" "%ROOT%gradle.properties"') do set "WATUT_VERSION=%%V"
 
 echo.
-echo [1/5] CoroUtil Fabric
+echo [1/6] CoroUtil Fabric
 call :gradle "%ROOT%..\CoroUtil" fabric
 if errorlevel 1 goto failed
 echo.
-echo [2/5] CoroUtil NeoForge
+echo [2/6] CoroUtil NeoForge
 call :gradle "%ROOT%..\CoroUtil" neoforge
 if errorlevel 1 goto failed
 echo.
-echo [3/5] WATUT Fabric
+echo [3/6] CoroUtil Paper (Maven)
+if exist "%ROOT%..\CoroUtil-Paper\pom.xml" (
+    call mvn -f "%ROOT%..\CoroUtil-Paper\pom.xml" clean install
+    if errorlevel 1 goto failed
+)
+echo.
+echo [4/6] WATUT Fabric
 call :gradle "%ROOT%" fabric
 if errorlevel 1 goto failed
 echo.
-echo [4/5] WATUT NeoForge
+echo [5/6] WATUT NeoForge
 call :gradle "%ROOT%" neoforge
 if errorlevel 1 goto failed
 echo.
-echo [5/5] WATUT Paper and Common
+echo [6/6] WATUT Paper and Common (Maven)
 call mvn -f "%ROOT%pom.xml" clean package
 if errorlevel 1 goto failed
 
@@ -55,6 +61,10 @@ copy /y "%ROOT%..\CoroUtil\build\libs\coroutil-fabric-%COROUTIL_VERSION%.jar" "%
 if errorlevel 1 goto failed
 copy /y "%ROOT%..\CoroUtil\build\libs\coroutil-neoforge-%COROUTIL_VERSION%.jar" "%ROOT%jar\" >nul
 if errorlevel 1 goto failed
+if exist "%ROOT%..\CoroUtil-Paper\jar\coroutil-server-paper-%COROUTIL_VERSION%.jar" (
+    copy /y "%ROOT%..\CoroUtil-Paper\jar\coroutil-server-paper-%COROUTIL_VERSION%.jar" "%ROOT%jar\" >nul
+    if errorlevel 1 goto failed
+)
 copy /y "%ROOT%watut-common\target\watut-common-%WATUT_VERSION%.jar" "%ROOT%jar\" >nul
 if errorlevel 1 goto failed
 
