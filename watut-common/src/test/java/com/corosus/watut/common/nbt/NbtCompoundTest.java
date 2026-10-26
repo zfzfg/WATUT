@@ -71,4 +71,23 @@ public class NbtCompoundTest {
         assertEquals(senderUuid, otherClientReceived.getUUID(WatutChannels.NBT_PLAYER_UUID));
         assertEquals(21, otherClientReceived.getInt(WatutChannels.NBT_PLAYER_GUI_STATUS));
     }
+
+    @Test
+    public void testNetworkRootHasNoName() throws IOException {
+        NbtCompound compound = new NbtCompound();
+        compound.putInt("n", 1);
+        byte[] bytes = compound.toByteArray();
+        assertEquals(NbtCompound.TAG_COMPOUND, bytes[0]);
+    }
+
+    @Test
+    public void testRejectsNegativeArrayLength() {
+        byte[] raw = new byte[] {
+                NbtCompound.TAG_COMPOUND,
+                NbtCompound.TAG_BYTE_ARRAY,
+                0, 1, 'a',
+                (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
+        };
+        assertThrows(IOException.class, () -> NbtCompound.fromByteArray(raw));
+    }
 }

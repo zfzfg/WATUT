@@ -29,3 +29,4 @@ adaptive-bandwidth:
 update-checker:
   enabled: true
   project-id: "what-are-they-up-to"
+  contact: "watut@localhost"

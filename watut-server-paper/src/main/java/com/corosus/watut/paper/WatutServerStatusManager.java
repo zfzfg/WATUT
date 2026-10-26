@@ -10,8 +10,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -23,6 +23,7 @@ public class WatutServerStatusManager {
 
     private final WatutPaperPlugin plugin;
     private final Map<UUID, WatutPlayerStatus> playerStatuses = new ConcurrentHashMap<>();
+    private final Set<UUID> suppressScreenSeries = ConcurrentHashMap.newKeySet();
 
     public WatutServerStatusManager(WatutPaperPlugin plugin) {
         this.plugin = plugin;
@@ -34,6 +35,7 @@ public class WatutServerStatusManager {
 
     public void removePlayer(UUID uuid) {
         playerStatuses.remove(uuid);
+        suppressScreenSeries.remove(uuid);
     }
 
     /**
@@ -68,8 +70,9 @@ public class WatutServerStatusManager {
             // 4. Track Idle Status
             if (compound.contains(WatutChannels.NBT_PLAYER_IDLE_TICKS)) {
                 int idleTicks = compound.getInt(WatutChannels.NBT_PLAYER_IDLE_TICKS);
-                status.setIdleTicks(idleTicks);
-                // Inject the server's configured ticks to go idle
+                status.setClientIdleAuthoritative(true);
+                applyIdle(player, status, idleTicks);
+                compound.putInt(WatutChannels.NBT_PLAYER_IDLE_TICKS, status.getIdleTicks());
                 int ticksToIdle = plugin.getConfig().getInt("ticksToMarkPlayerIdle", 1200);
                 compound.putInt(WatutChannels.NBT_PLAYER_TICKS_TO_GO_IDLE, ticksToIdle);
             }
@@ -82,22 +85,8 @@ public class WatutServerStatusManager {
             }
 
             // 6. Adaptive Bandwidth Management (Configurable)
-            boolean adaptiveEnabled = plugin.getConfig().getBoolean("adaptive-bandwidth.enabled", false);
-            if (adaptiveEnabled && compound.contains(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA)) {
-                int pingThreshold = plugin.getConfig().getInt("adaptive-bandwidth.ping-threshold-ms", 180);
-                int nearbyThreshold = plugin.getConfig().getInt("adaptive-bandwidth.nearby-player-threshold", 8);
-
-                double maxDist = plugin.getConfig().getDouble("distanceRequiredToShowGUIInfo", 16.0);
-                int nearbyCount = countNearbyPlayers(player, maxDist);
-                int playerPing = player.getPing();
-
-                if (playerPing >= pingThreshold || nearbyCount >= nearbyThreshold) {
-                    // Omit heavy raw pixel data in favor of fluid icon particles
-                    compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA);
-                    compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_PACKET_COUNT);
-                    compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_PACKET_INDEX);
-                    compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_SIZE);
-                }
+            if (compound.contains(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA)) {
+                stripScreenSeriesIfNeeded(player, compound);
             }
 
             // 7. Serialize modified payload
@@ -185,29 +174,75 @@ public class WatutServerStatusManager {
         }
     }
 
-    public void tickIdleCheck() {
+    /**
+     * Fallback idle clock for players whose client never sends idle ticks.
+     * Must run on the player's region thread.
+     */
+    public void tickIdleFallback(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        WatutPlayerStatus status = getStatus(player.getUniqueId());
+        if (status.isClientIdleAuthoritative()) {
+            return;
+        }
+        applyIdle(player, status, status.getIdleTicks() + 20);
+    }
+
+    public void noteActivity(Player player) {
+        WatutPlayerStatus status = getStatus(player.getUniqueId());
+        if (status.isClientIdleAuthoritative()) {
+            return;
+        }
+        applyIdle(player, status, 0);
+    }
+
+    private void applyIdle(Player player, WatutPlayerStatus status, int ticks) {
         int ticksToIdle = plugin.getConfig().getInt("ticksToMarkPlayerIdle", 1200);
         boolean announce = plugin.getConfig().getBoolean("announceIdleStatesInChat", false);
+        boolean nowIdle = ticks > ticksToIdle;
+        if (nowIdle != status.isIdle() && announce) {
+            String message = nowIdle
+                    ? "§7" + player.getName() + " has gone idle."
+                    : "§7" + player.getName() + " is no longer idle.";
+            Bukkit.getGlobalRegionScheduler().run(plugin, task -> Bukkit.broadcastMessage(message));
+        }
+        status.setIdleTicks(ticks);
+        status.setIdle(nowIdle);
+    }
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            WatutPlayerStatus status = getStatus(player.getUniqueId());
-            status.setIdleTicks(status.getIdleTicks() + 20); // called every 20 ticks (1 sec)
-
-            if (status.getIdleTicks() >= ticksToIdle) {
-                if (!status.isIdle()) {
-                    status.setIdle(true);
-                    if (announce) {
-                        Bukkit.broadcastMessage("§7" + player.getName() + " has gone idle.");
-                    }
-                }
-            } else {
-                if (status.isIdle()) {
-                    status.setIdle(false);
-                    if (announce) {
-                        Bukkit.broadcastMessage("§7" + player.getName() + " is no longer idle.");
-                    }
-                }
+    private void stripScreenSeriesIfNeeded(Player player, NbtCompound compound) {
+        boolean adaptiveEnabled = plugin.getConfig().getBoolean("adaptive-bandwidth.enabled", false);
+        int packetCount = compound.getInt(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_PACKET_COUNT);
+        int packetIndex = compound.getInt(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_PACKET_INDEX);
+        if (packetCount <= 0) {
+            packetCount = 1;
+        }
+        if (packetIndex <= 1) {
+            boolean overBudget = false;
+            if (adaptiveEnabled) {
+                int pingThreshold = plugin.getConfig().getInt("adaptive-bandwidth.ping-threshold-ms", 180);
+                int nearbyThreshold = plugin.getConfig().getInt("adaptive-bandwidth.nearby-player-threshold", 8);
+                double maxDist = plugin.getConfig().getDouble("distanceRequiredToShowGUIInfo", 16.0);
+                overBudget = player.getPing() >= pingThreshold || countNearbyPlayers(player, maxDist) >= nearbyThreshold;
             }
+            if (overBudget) {
+                suppressScreenSeries.add(player.getUniqueId());
+            } else {
+                suppressScreenSeries.remove(player.getUniqueId());
+            }
+        }
+        if (!suppressScreenSeries.contains(player.getUniqueId())) {
+            return;
+        }
+        compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA);
+        compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_PACKET_COUNT);
+        compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_PACKET_INDEX);
+        compound.remove(WatutChannels.NBT_PLAYER_SCREEN_COMPRESSED_PIXEL_DATA_SIZE);
+        compound.remove(WatutChannels.NBT_PLAYER_SCREEN_WIDTH);
+        compound.remove(WatutChannels.NBT_PLAYER_SCREEN_HEIGHT);
+        if (packetIndex >= packetCount) {
+            suppressScreenSeries.remove(player.getUniqueId());
         }
     }
 

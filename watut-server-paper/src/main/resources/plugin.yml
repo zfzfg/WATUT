@@ -1,7 +1,7 @@
 name: WhatAreTheyUpTo
 version: '${project.version}'
 main: com.corosus.watut.paper.WatutPaperPlugin
-api-version: '1.21'
+api-version: '26.1'
 author: Corosus
 description: Server plugin support for the WATUT client mod (Paper / Java 25)
 commands:

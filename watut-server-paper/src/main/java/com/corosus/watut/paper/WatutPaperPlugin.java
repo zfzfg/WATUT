@@ -2,14 +2,17 @@ package com.corosus.watut.paper;
 
 import com.corosus.watut.common.WatutChannels;
 import com.corosus.watut.paper.update.UpdateChecker;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Main JavaPlugin class for the Paper/Spigot/Folia server implementation of WATUT.
@@ -19,7 +22,7 @@ public class WatutPaperPlugin extends JavaPlugin implements CommandExecutor {
     private static WatutPaperPlugin instance;
     private WatutServerStatusManager statusManager;
     private UpdateChecker updateChecker;
-    private AutoCloseable idleTaskCanceller;
+    private final Map<UUID, ScheduledTask> idleTasks = new ConcurrentHashMap<>();
 
     public static WatutPaperPlugin getInstance() {
         return instance;
@@ -52,76 +55,46 @@ public class WatutPaperPlugin extends JavaPlugin implements CommandExecutor {
             getCommand("watut").setExecutor(this);
         }
 
-        // Schedule idle status check (every 20 ticks / 1 second) with Folia / Paper compatibility
-        startIdleTask();
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            startPlayerIdleTask(online);
+        }
 
-        // Start Modrinth update check
         if (getConfig().getBoolean("update-checker.enabled", true)) {
             String projectId = getConfig().getString("update-checker.project-id", "what-are-they-up-to");
-            updateChecker = new UpdateChecker(this, projectId, "admin@server.local", true);
-            updateChecker.check(60L, null); // Check asynchronously after 3 seconds
+            String contact = getConfig().getString("update-checker.contact", "watut@localhost");
+            updateChecker = new UpdateChecker(this, projectId, contact, true);
+            updateChecker.check(60L, null);
         }
 
         getLogger().info("WATUT Paper Server Plugin v" + getDescription().getVersion() + " (Java 25) initialized successfully!");
     }
 
-    private void startIdleTask() {
-        if (isFolia()) {
-            try {
-                Object scheduler = Bukkit.class.getMethod("getGlobalRegionScheduler").invoke(null);
-                java.lang.reflect.Method runMethod = scheduler.getClass().getMethod("runAtFixedRate",
-                        org.bukkit.plugin.Plugin.class, java.util.function.Consumer.class, long.class, long.class);
-
-                final AtomicReference<Object> scheduledTaskRef = new AtomicReference<>();
-                java.util.function.Consumer<Object> taskConsumer = task -> {
-                    if (statusManager != null) {
-                        statusManager.tickIdleCheck();
-                    }
-                };
-
-                Object task = runMethod.invoke(scheduler, this, taskConsumer, 20L, 20L);
-                scheduledTaskRef.set(task);
-
-                idleTaskCanceller = () -> {
-                    Object t = scheduledTaskRef.get();
-                    if (t != null) {
-                        try {
-                            t.getClass().getMethod("cancel").invoke(t);
-                        } catch (Exception ignored) {}
-                    }
-                };
-                return;
-            } catch (Exception e) {
-                getLogger().warning("Failed to initialize Folia global scheduler, falling back to Bukkit scheduler: " + e.getMessage());
+    public void startPlayerIdleTask(Player player) {
+        idleTasks.compute(player.getUniqueId(), (id, existing) -> {
+            if (existing != null) {
+                existing.cancel();
             }
-        }
-
-        // Standard Paper / Spigot scheduler fallback
-        var bukkitTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
-            if (statusManager != null) {
-                statusManager.tickIdleCheck();
-            }
-        }, 20L, 20L);
-        idleTaskCanceller = bukkitTask::cancel;
+            return player.getScheduler().runAtFixedRate(this, task -> {
+                if (statusManager != null) {
+                    statusManager.tickIdleFallback(player);
+                }
+            }, null, 20L, 20L);
+        });
     }
 
-    private boolean isFolia() {
-        try {
-            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
+    public void stopPlayerIdleTask(UUID playerId) {
+        ScheduledTask task = idleTasks.remove(playerId);
+        if (task != null) {
+            task.cancel();
         }
     }
 
     @Override
     public void onDisable() {
-        if (idleTaskCanceller != null) {
-            try {
-                idleTaskCanceller.close();
-            } catch (Exception ignored) {}
-            idleTaskCanceller = null;
+        for (ScheduledTask task : idleTasks.values()) {
+            task.cancel();
         }
+        idleTasks.clear();
 
         Bukkit.getMessenger().unregisterIncomingPluginChannel(this);
         Bukkit.getMessenger().unregisterOutgoingPluginChannel(this);

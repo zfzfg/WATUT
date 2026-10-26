@@ -26,7 +26,7 @@
 
         <!-- Neueste Minecraft Version (26.3) & verfügbare Paper API -->
         <minecraft.version>26.3</minecraft.version>
-        <paper.api.version>1.21.4-R0.1-SNAPSHOT</paper.api.version>
+        <paper.api.version>26.1.2.build.74-stable</paper.api.version>
         <gson.version>2.11.0</gson.version>
     </properties>
 
@@ -76,6 +76,11 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.5.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.2</version>
                 </plugin>
             </plugins>

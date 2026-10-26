@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /**
@@ -69,7 +70,8 @@ public final class UpdateChecker {
      * @param callback   darf null sein
      */
     public void check(long delayTicks, Callback callback) {
-        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+        long delayMs = Math.max(0L, delayTicks) * 50L;
+        Bukkit.getAsyncScheduler().runDelayed(plugin, task -> {
             try {
                 performCheck();
             } catch (Exception e) {
@@ -77,10 +79,10 @@ public final class UpdateChecker {
                         "Update-Pruefung fehlgeschlagen: " + e.getMessage(), e);
             } finally {
                 if (callback != null && plugin.isEnabled()) {
-                    Bukkit.getScheduler().runTask(plugin, () -> callback.finished(this));
+                    Bukkit.getGlobalRegionScheduler().run(plugin, regionTask -> callback.finished(this));
                 }
             }
-        }, Math.max(0L, delayTicks));
+        }, delayMs, TimeUnit.MILLISECONDS);
     }
 
     /** true nur, wenn wirklich geprueft wurde UND eine neuere Version existiert. */

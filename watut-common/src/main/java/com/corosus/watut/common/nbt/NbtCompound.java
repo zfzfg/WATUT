@@ -24,6 +24,9 @@ public class NbtCompound {
     public static final byte TAG_INT_ARRAY = 11;
     public static final byte TAG_LONG_ARRAY = 12;
 
+    static final int MAX_DEPTH = 32;
+    static final int MAX_COLLECTION_LENGTH = 1_048_576;
+
     private final Map<String, Object> tags = new LinkedHashMap<>();
     private final Map<String, Byte> tagTypes = new HashMap<>();
 
@@ -264,28 +267,39 @@ public class NbtCompound {
             throw new IOException("Expected NBT root TAG_Compound (10), got " + rootType);
         }
 
-        // Handle possible named root tag (legacy NbtIo format)
-        in.mark(3);
-        // We peek to see if the next bytes are a UTF name string
         NbtCompound compound = new NbtCompound();
-        compound.readPayload(in);
+        compound.readPayload(in, 1);
         return compound;
     }
 
     void readPayload(DataInputStream in) throws IOException {
+        readPayload(in, 1);
+    }
+
+    void readPayload(DataInputStream in, int depth) throws IOException {
+        if (depth > MAX_DEPTH) {
+            throw new IOException("NBT compound nested too deeply");
+        }
         while (true) {
             byte type = in.readByte();
             if (type == TAG_END) {
                 break;
             }
             String name = in.readUTF();
-            Object value = readTagValue(in, type);
+            Object value = readTagValue(in, type, depth);
             tags.put(name, value);
             tagTypes.put(name, type);
         }
     }
 
-    private static Object readTagValue(DataInputStream in, byte type) throws IOException {
+    private static int checkedLength(int len) throws IOException {
+        if (len < 0 || len > MAX_COLLECTION_LENGTH) {
+            throw new IOException("Invalid NBT collection length: " + len);
+        }
+        return len;
+    }
+
+    private static Object readTagValue(DataInputStream in, byte type, int depth) throws IOException {
         return switch (type) {
             case TAG_BYTE -> in.readByte();
             case TAG_SHORT -> in.readShort();
@@ -294,7 +308,7 @@ public class NbtCompound {
             case TAG_FLOAT -> in.readFloat();
             case TAG_DOUBLE -> in.readDouble();
             case TAG_BYTE_ARRAY -> {
-                int len = in.readInt();
+                int len = checkedLength(in.readInt());
                 byte[] arr = new byte[len];
                 in.readFully(arr);
                 yield arr;
@@ -302,22 +316,23 @@ public class NbtCompound {
             case TAG_STRING -> in.readUTF();
             case TAG_COMPOUND -> {
                 NbtCompound child = new NbtCompound();
-                child.readPayload(in);
+                child.readPayload(in, depth + 1);
                 yield child;
             }
             case TAG_INT_ARRAY -> {
-                int len = in.readInt();
+                int len = checkedLength(in.readInt());
                 int[] arr = new int[len];
                 for (int i = 0; i < len; i++) arr[i] = in.readInt();
                 yield arr;
             }
             case TAG_LONG_ARRAY -> {
-                int len = in.readInt();
+                int len = checkedLength(in.readInt());
                 long[] arr = new long[len];
                 for (int i = 0; i < len; i++) arr[i] = in.readLong();
                 yield arr;
             }
-            case TAG_LIST -> NbtList.read(in);
+            case TAG_LIST -> NbtList.read(in, depth);
+            case TAG_END -> throw new IOException("TAG_End is not a value");
             default -> throw new IOException("Unknown NBT tag type: " + type);
         };
     }
@@ -353,12 +368,18 @@ public class NbtCompound {
             }
         }
 
-        public static NbtList read(DataInputStream in) throws IOException {
+        public static NbtList read(DataInputStream in, int depth) throws IOException {
+            if (depth > MAX_DEPTH) {
+                throw new IOException("NBT list nested too deeply");
+            }
             byte elemType = in.readByte();
-            int len = in.readInt();
+            int len = checkedLength(in.readInt());
+            if (elemType == TAG_END && len > 0) {
+                throw new IOException("TAG_End list cannot contain elements");
+            }
             NbtList list = new NbtList(elemType);
             for (int i = 0; i < len; i++) {
-                list.add(readTagValue(in, elemType));
+                list.add(readTagValue(in, elemType, depth + 1));
             }
             return list;
         }

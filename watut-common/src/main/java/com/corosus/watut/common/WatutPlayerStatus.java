@@ -15,6 +15,8 @@ public class WatutPlayerStatus {
     private float mouseY = 0f;
     private boolean mousePressed = false;
     private boolean idle = false;
+    /** True once the client mod has reported idle ticks. The server then stops its own counter. */
+    private boolean clientIdleAuthoritative = false;
 
     public WatutPlayerStatus(UUID playerUuid) {
         this.playerUuid = playerUuid;
@@ -78,5 +80,13 @@ public class WatutPlayerStatus {
 
     public void setIdle(boolean idle) {
         this.idle = idle;
+    }
+
+    public boolean isClientIdleAuthoritative() {
+        return clientIdleAuthoritative;
+    }
+
+    public void setClientIdleAuthoritative(boolean clientIdleAuthoritative) {
+        this.clientIdleAuthoritative = clientIdleAuthoritative;
     }
 }

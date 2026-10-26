@@ -1,11 +1,5 @@
 package com.corosus.watut.paper;
 
-import com.corosus.watut.common.WatutChannels;
-import com.corosus.watut.common.WatutPlayerStatus;
-import com.corosus.watut.common.nbt.NbtCompound;
-import org.bukkit.Location;
-import org.bukkit.block.Block;
-import org.bukkit.block.Container;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,10 +9,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-
-import java.io.IOException;
 
 /**
  * Event listener providing Bukkit-side hooks that replicate the mod's server-side tracking.
@@ -35,6 +25,7 @@ public class WatutEventListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         plugin.getStatusManager().getStatus(player.getUniqueId());
+        plugin.startPlayerIdleTask(player);
 
         // Sync initial state and server configs
         plugin.getStatusManager().syncAllToPlayer(player);
@@ -51,6 +42,7 @@ public class WatutEventListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
+        plugin.stopPlayerIdleTask(event.getPlayer().getUniqueId());
         plugin.getStatusManager().removePlayer(event.getPlayer().getUniqueId());
     }
 
@@ -60,11 +52,7 @@ public class WatutEventListener implements Listener {
         if (event.getFrom().getX() != event.getTo().getX()
                 || event.getFrom().getY() != event.getTo().getY()
                 || event.getFrom().getZ() != event.getTo().getZ()) {
-            WatutPlayerStatus status = plugin.getStatusManager().getStatus(event.getPlayer().getUniqueId());
-            status.setIdleTicks(0);
-            if (status.isIdle()) {
-                status.setIdle(false);
-            }
+            plugin.getStatusManager().noteActivity(event.getPlayer());
         }
     }
 
@@ -74,60 +62,11 @@ public class WatutEventListener implements Listener {
             return;
         }
 
-        WatutPlayerStatus status = plugin.getStatusManager().getStatus(player.getUniqueId());
-        status.setIdleTicks(0);
-        if (status.isIdle()) {
-            status.setIdle(false);
-        }
-
-        if (plugin.getConfig().getBoolean("dontSendDetailedItemInfo", false)) {
-            return;
-        }
-
-        ItemStack item = event.getCurrentItem();
-        if (item == null || item.getType().isAir()) {
-            item = event.getCursor();
-        }
-        if (item == null || item.getType().isAir()) {
-            return;
-        }
-
-        Inventory topInventory = event.getView().getTopInventory();
-        if (topInventory.getHolder() instanceof Container container) {
-            Block block = container.getBlock();
-            Location blockLoc = block.getLocation().add(0.5, 0.5, 0.5);
-            Location playerLoc = player.getLocation().add(0, 1.2, 0);
-
-            boolean playerToContainer = event.getClickedInventory() != topInventory;
-            Location from = playerToContainer ? playerLoc : blockLoc;
-            Location to = playerToContainer ? blockLoc : playerLoc;
-
-            try {
-                NbtCompound movePacket = new NbtCompound();
-                NbtCompound itemNbt = new NbtCompound();
-                itemNbt.putString("id", item.getType().getKey().toString());
-                itemNbt.putByte("Count", (byte) item.getAmount());
-
-                movePacket.putCompound(WatutChannels.NBT_ITEM_TRANSFER_ITEMSTACK, itemNbt);
-                movePacket.putFloat(WatutChannels.NBT_ITEM_TRANSFER_FROM_X, (float) from.getX());
-                movePacket.putFloat(WatutChannels.NBT_ITEM_TRANSFER_FROM_Y, (float) from.getY());
-                movePacket.putFloat(WatutChannels.NBT_ITEM_TRANSFER_FROM_Z, (float) from.getZ());
-                movePacket.putFloat(WatutChannels.NBT_ITEM_TRANSFER_TO_X, (float) to.getX());
-                movePacket.putFloat(WatutChannels.NBT_ITEM_TRANSFER_TO_Y, (float) to.getY());
-                movePacket.putFloat(WatutChannels.NBT_ITEM_TRANSFER_TO_Z, (float) to.getZ());
-
-                double maxDist = plugin.getConfig().getDouble("distanceRequiredToShowGUIInfo", 16.0);
-                plugin.getStatusManager().sendToNearby(player, movePacket.toByteArray(), maxDist);
-            } catch (IOException ignored) {}
-        }
+        plugin.getStatusManager().noteActivity(player);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        WatutPlayerStatus status = plugin.getStatusManager().getStatus(event.getPlayer().getUniqueId());
-        status.setIdleTicks(0);
-        if (status.isIdle()) {
-            status.setIdle(false);
-        }
+        plugin.getStatusManager().noteActivity(event.getPlayer());
     }
 }

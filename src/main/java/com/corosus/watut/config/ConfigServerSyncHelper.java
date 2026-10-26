@@ -61,6 +61,9 @@ public class ConfigServerSyncHelper {
             for (Map.Entry<String, Class> entry : settingsTypes.entrySet()) {
                 String name = entry.getKey();
                 Class value = entry.getValue();
+                if (!nbt.contains(name)) {
+                    continue;
+                }
                 if (value == int.class) {
                     setFieldValue(name, nbt.getInt(name));
                 } else if (value == float.class) {

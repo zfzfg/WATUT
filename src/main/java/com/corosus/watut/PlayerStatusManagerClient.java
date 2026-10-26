@@ -60,6 +60,7 @@ public class PlayerStatusManagerClient extends PlayerStatusManager {
     private Level lastLevel;
 
     private boolean wasMousePressed = false;
+    private boolean mousePacketSent = false;
     private int mousePressedCountdown = 0;
 
     public static ShaderInstanceBlur positionTexBlur;
@@ -318,6 +319,10 @@ public class PlayerStatusManagerClient extends PlayerStatusManager {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.BREWING_STAND);
             } else if (mc.screen instanceof DispenserScreen) {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.DISPENSER);
+            } else if (mc.screen instanceof BlastFurnaceScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.BLAST_FURNACE);
+            } else if (mc.screen instanceof SmokerScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.SMOKER);
             } else if (mc.screen instanceof AbstractFurnaceScreen<?>) {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.FURNACE);
             } else if (mc.screen instanceof GrindstoneScreen) {
@@ -338,10 +343,6 @@ public class PlayerStatusManagerClient extends PlayerStatusManager {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.STONECUTTER);
             } else if (mc.screen instanceof CartographyTableScreen) {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.CARTOGRAPHY);
-            } else if (mc.screen instanceof BlastFurnaceScreen) {
-                sendGuiStatus(PlayerStatus.PlayerGuiState.BLAST_FURNACE);
-            } else if (mc.screen instanceof SmokerScreen) {
-                sendGuiStatus(PlayerStatus.PlayerGuiState.SMOKER);
             } else if (mc.screen instanceof AbstractCommandBlockEditScreen) {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.COMMAND_BLOCK);
             } else if (mc.screen != null && !(mc.screen instanceof DeathScreen)) {
@@ -1195,7 +1196,8 @@ public class PlayerStatusManagerClient extends PlayerStatusManager {
             float dx = Math.abs(getStatusLocal().getScreenPosPercentX() - x);
             float dy = Math.abs(getStatusLocal().getScreenPosPercentY() - y);
             boolean clickChanged = getStatusLocal().isPressing() != pressed;
-            if (dx > 0.005f || dy > 0.005f || clickChanged) {
+            if (!mousePacketSent || dx > 0.005f || dy > 0.005f || clickChanged) {
+                mousePacketSent = true;
                 CompoundTag data = new CompoundTag();
                 data.putFloat(WatutNetworking.NBTDataPlayerMouseX, x);
                 data.putFloat(WatutNetworking.NBTDataPlayerMouseY, y);
