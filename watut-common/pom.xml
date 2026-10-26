@@ -16,6 +16,11 @@
     <description>Shared protocol definitions, network channels, and data structures for WATUT</description>
 
     <dependencies>
-        <!-- Common module has zero third-party dependencies for maximum portability -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

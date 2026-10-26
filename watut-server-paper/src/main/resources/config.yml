@@ -16,6 +16,15 @@ announceIdleStatesInChat: false
 dontSendDetailedGUIInfo: false
 dontSendDetailedItemInfo: false
 
+# Adaptive Bandwidth Mode (Dynamic LoD)
+# When enabled, automatically downscales or omits live GUI screenshots in favor of
+# lightweight static icon particles when player ping is high or many players are nearby.
+# Default: false (not enabled by default, but freely configurable)
+adaptive-bandwidth:
+  enabled: false
+  ping-threshold-ms: 180
+  nearby-player-threshold: 8
+
 # Update checker settings (Modrinth)
 update-checker:
   enabled: true

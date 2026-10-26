@@ -32,7 +32,13 @@ public class PlayerStatus {
         LOOM,
         VILLAGER,
         COMMAND_BLOCK,
-        MISC;
+        MISC,
+        CRAFTER,
+        SMITHING,
+        STONECUTTER,
+        CARTOGRAPHY,
+        BLAST_FURNACE,
+        SMOKER;
 
         private static final Map<Integer, PlayerGuiState> lookup = new HashMap<>();
         private static final List<PlayerGuiState> listPointingGuis = new ArrayList<>();

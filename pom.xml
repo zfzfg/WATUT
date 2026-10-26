@@ -61,7 +61,6 @@
                     <version>3.13.0</version>
                     <configuration>
                         <release>${java.version}</release>
-                        <enablePreview>true</enablePreview>
                     </configuration>
                 </plugin>
                 <plugin>

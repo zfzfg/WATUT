@@ -330,6 +330,18 @@ public class PlayerStatusManagerClient extends PlayerStatusManager {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.LOOM);
             } else if (mc.screen instanceof MerchantScreen) {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.VILLAGER);
+            } else if (mc.screen instanceof CrafterScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.CRAFTER);
+            } else if (mc.screen instanceof SmithingScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.SMITHING);
+            } else if (mc.screen instanceof StonecutterScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.STONECUTTER);
+            } else if (mc.screen instanceof CartographyTableScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.CARTOGRAPHY);
+            } else if (mc.screen instanceof BlastFurnaceScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.BLAST_FURNACE);
+            } else if (mc.screen instanceof SmokerScreen) {
+                sendGuiStatus(PlayerStatus.PlayerGuiState.SMOKER);
             } else if (mc.screen instanceof AbstractCommandBlockEditScreen) {
                 sendGuiStatus(PlayerStatus.PlayerGuiState.COMMAND_BLOCK);
             } else if (mc.screen != null && !(mc.screen instanceof DeathScreen)) {
@@ -1178,11 +1190,12 @@ public class PlayerStatusManagerClient extends PlayerStatusManager {
         Minecraft mc = Minecraft.getInstance();
         float x = pos.first;
         float y = pos.second;
-
         boolean testSingleplayer = false;
-
         if (testSingleplayer || mc.level.getNearestPlayer(mc.player.getX(), mc.player.getY(), mc.player.getZ(), ConfigServerControlledSyncedToClient.distanceRequiredToShowGUIInfo, (entity) -> entity != mc.player) != null) {
-            if (getStatusLocal().getScreenPosPercentX() != x || getStatusLocal().getScreenPosPercentY() != y || getStatusLocal().isPressing() != pressed) {
+            float dx = Math.abs(getStatusLocal().getScreenPosPercentX() - x);
+            float dy = Math.abs(getStatusLocal().getScreenPosPercentY() - y);
+            boolean clickChanged = getStatusLocal().isPressing() != pressed;
+            if (dx > 0.005f || dy > 0.005f || clickChanged) {
                 CompoundTag data = new CompoundTag();
                 data.putFloat(WatutNetworking.NBTDataPlayerMouseX, x);
                 data.putFloat(WatutNetworking.NBTDataPlayerMouseY, y);

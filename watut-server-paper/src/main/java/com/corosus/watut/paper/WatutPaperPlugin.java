@@ -7,17 +7,19 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Main JavaPlugin class for the Paper/Spigot server implementation of WATUT.
+ * Main JavaPlugin class for the Paper/Spigot/Folia server implementation of WATUT.
  */
 public class WatutPaperPlugin extends JavaPlugin implements CommandExecutor {
 
     private static WatutPaperPlugin instance;
     private WatutServerStatusManager statusManager;
     private UpdateChecker updateChecker;
-    private BukkitTask idleTask;
+    private AutoCloseable idleTaskCanceller;
 
     public static WatutPaperPlugin getInstance() {
         return instance;
@@ -50,12 +52,8 @@ public class WatutPaperPlugin extends JavaPlugin implements CommandExecutor {
             getCommand("watut").setExecutor(this);
         }
 
-        // Start repeating task for idle status check (every 20 ticks / 1 second)
-        idleTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
-            if (statusManager != null) {
-                statusManager.tickIdleCheck();
-            }
-        }, 20L, 20L);
+        // Schedule idle status check (every 20 ticks / 1 second) with Folia / Paper compatibility
+        startIdleTask();
 
         // Start Modrinth update check
         if (getConfig().getBoolean("update-checker.enabled", true)) {
@@ -67,11 +65,62 @@ public class WatutPaperPlugin extends JavaPlugin implements CommandExecutor {
         getLogger().info("WATUT Paper Server Plugin v" + getDescription().getVersion() + " (Java 25) initialized successfully!");
     }
 
+    private void startIdleTask() {
+        if (isFolia()) {
+            try {
+                Object scheduler = Bukkit.class.getMethod("getGlobalRegionScheduler").invoke(null);
+                java.lang.reflect.Method runMethod = scheduler.getClass().getMethod("runAtFixedRate",
+                        org.bukkit.plugin.Plugin.class, java.util.function.Consumer.class, long.class, long.class);
+
+                final AtomicReference<Object> scheduledTaskRef = new AtomicReference<>();
+                java.util.function.Consumer<Object> taskConsumer = task -> {
+                    if (statusManager != null) {
+                        statusManager.tickIdleCheck();
+                    }
+                };
+
+                Object task = runMethod.invoke(scheduler, this, taskConsumer, 20L, 20L);
+                scheduledTaskRef.set(task);
+
+                idleTaskCanceller = () -> {
+                    Object t = scheduledTaskRef.get();
+                    if (t != null) {
+                        try {
+                            t.getClass().getMethod("cancel").invoke(t);
+                        } catch (Exception ignored) {}
+                    }
+                };
+                return;
+            } catch (Exception e) {
+                getLogger().warning("Failed to initialize Folia global scheduler, falling back to Bukkit scheduler: " + e.getMessage());
+            }
+        }
+
+        // Standard Paper / Spigot scheduler fallback
+        var bukkitTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
+            if (statusManager != null) {
+                statusManager.tickIdleCheck();
+            }
+        }, 20L, 20L);
+        idleTaskCanceller = bukkitTask::cancel;
+    }
+
+    private boolean isFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
     @Override
     public void onDisable() {
-        if (idleTask != null) {
-            idleTask.cancel();
-            idleTask = null;
+        if (idleTaskCanceller != null) {
+            try {
+                idleTaskCanceller.close();
+            } catch (Exception ignored) {}
+            idleTaskCanceller = null;
         }
 
         Bukkit.getMessenger().unregisterIncomingPluginChannel(this);

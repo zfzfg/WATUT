@@ -27,7 +27,13 @@ public enum PlayerGuiState {
     LOOM,
     VILLAGER,
     COMMAND_BLOCK,
-    MISC;
+    MISC,
+    CRAFTER,
+    SMITHING,
+    STONECUTTER,
+    CARTOGRAPHY,
+    BLAST_FURNACE,
+    SMOKER;
 
     private static final Map<Integer, PlayerGuiState> LOOKUP = new HashMap<>();
     private static final Set<PlayerGuiState> POINTING_GUIS = EnumSet.noneOf(PlayerGuiState.class);
