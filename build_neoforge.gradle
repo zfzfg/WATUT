@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '1.0.14'
+    id 'net.neoforged.moddev' version '2.0.148'
     id "com.hypherionmc.modutils.modpublisher" version "2.1.6"
 }
 
@@ -52,11 +52,6 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_version
-        minecraftVersion = project.parchment_mc_version
-    }
 
     // This line is optional. Access Transformers are automatically detected
     accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
@@ -146,7 +141,7 @@ dependencies {
     // The group id is ignored when searching -- in this case, it is "blank"
     // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
 
-    implementation files("CoroUtil/coroutil-neoforge-1.21.4-1.3.8.jar")
+    implementation files("../CoroUtil/build/libs/coroutil-neoforge-${project.coroutil_version}.jar")
 
     implementation ("curse.maven:jei-238222:5846880")
     implementation ("curse.maven:xaeromm-263420:6184458")
@@ -231,13 +226,6 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
 publisher {
     // Setup the required API keys. You only need to define the keys for
     // the platforms you plan on uploading to

@@ -49,17 +49,13 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	implementation files("CoroUtil/coroutil-fabric-1.21.4-1.3.8.jar")
+	implementation files("../CoroUtil/build/libs/coroutil-fabric-${project.coroutil_version}.jar")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	//include(modImplementation("ForgeConfigAPIPort:ForgeConfigAPIPort:v8.0.0-1.20.1-Fabric"))
-	//using https://www.curseforge.com/minecraft/mc-mods/forge-config-api-port-fabric/files/4583000
-	include(implementation("curse.maven:forge-config-api-port-fabric-547434:5427493"))
 	implementation 'com.electronwill.night-config:core:3.7.3'
 	implementation 'com.electronwill.night-config:toml:3.7.3'
-	//include(modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:v8.0.0-1.20.1-Fabric"))
 }
 
 //If there's mixins
