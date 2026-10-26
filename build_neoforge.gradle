@@ -31,8 +31,23 @@ base {
     archivesName = "${mod_id}-neoforge"
 }
 
+tasks.register('exportReleaseJar') {
+    dependsOn tasks.named('jar')
+    doLast {
+        def outDir = rootProject.file('jar')
+        outDir.mkdirs()
+        outDir.listFiles()?.findAll { it.name.startsWith('watut-neoforge-') && it.name.endsWith('.jar') }?.each { it.delete() }
+        def built = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        java.nio.file.Files.copy(built.toPath(), outDir.toPath().resolve(built.name))
+    }
+}
+
+tasks.named('build') {
+    finalizedBy 'exportReleaseJar'
+}
+
 // Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     // Specify the version of NeoForge to use.
@@ -131,7 +146,7 @@ dependencies {
     // The group id is ignored when searching -- in this case, it is "blank"
     // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
 
-    implementation ("com.corosus.coroutil:coroutil-neoforge:${project.minecraft_version}.0-${project.coroutil_version}")
+    implementation files("CoroUtil/coroutil-neoforge-1.21.4-1.3.8.jar")
 
     implementation ("curse.maven:jei-238222:5846880")
     implementation ("curse.maven:xaeromm-263420:6184458")

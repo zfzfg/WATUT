@@ -35,3 +35,9 @@ runServer
 # maven
 target/
 .flattened-pom.xml
+
+# collected release jars
+/jar/
+
+# local CoroUtil jars
+/CoroUtil/
