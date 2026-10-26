@@ -24,6 +24,16 @@ tasks.withType(Jar).configureEach {
 
 
 repositories {
+    exclusiveContent {
+        forRepository {
+            flatDir {
+                name = 'localCoroUtil'
+                dirs rootProject.file('../CoroUtil/build/libs')
+            }
+        }
+        filter { includeGroup 'com.corosus.coroutil' }
+    }
+
     mavenLocal()
     maven {
         url "https://cursemaven.com"
@@ -156,7 +166,13 @@ dependencies {
     // The group id is ignored when searching -- in this case, it is "blank"
     // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
 
-    implementation files("../CoroUtil/build/libs/coroutil-neoforge-${project.coroutil_version}.jar")
+    jarJar(implementation("com.corosus.coroutil:coroutil-neoforge:${project.coroutil_version}")) {
+        version {
+            strictly "[${project.coroutil_version},26.4)"
+            prefer project.coroutil_version
+        }
+    }
+
 
 
 
@@ -247,3 +263,5 @@ if (providers.gradleProperty('enableModPublishing').getOrElse('false').toBoolean
 }
 
 tasks.named('test') { useJUnitPlatform() }
+
+apply from: 'gradle/verify-bundled-coroutil.gradle'

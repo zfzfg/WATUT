@@ -16,6 +16,16 @@ tasks.withType(Jar).configureEach {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    exclusiveContent {
+        forRepository {
+            flatDir {
+                name = 'localCoroUtil'
+                dirs rootProject.file('../CoroUtil/build/libs')
+            }
+        }
+        filter { includeGroup 'com.corosus.coroutil' }
+    }
+
 	// Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
@@ -58,7 +68,8 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	implementation files("../CoroUtil/build/libs/coroutil-fabric-${project.coroutil_version}.jar")
+	implementation "com.corosus.coroutil:coroutil-fabric:${project.coroutil_version}"
+	include "com.corosus.coroutil:coroutil-fabric:${project.coroutil_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
@@ -160,3 +171,5 @@ if (providers.gradleProperty('enableModPublishing').getOrElse('false').toBoolean
 }
 
 tasks.named('test') { useJUnitPlatform() }
+
+apply from: 'gradle/verify-bundled-coroutil.gradle'

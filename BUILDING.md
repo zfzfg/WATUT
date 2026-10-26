@@ -4,7 +4,7 @@ Voraussetzungen: JDK 25, Maven auf `PATH`, WATUT und CoroUtil als benachbarte Or
 
 Unter Windows `build_all_jars.bat` im WATUT-Ordner doppelt anklicken. Das Skript findet JDK 25, baut zuerst CoroUtil, danach WATUT für Fabric und NeoForge und anschließend das Paper-Modul. Es hält beim ersten Fehler an und wartet zum Schluss auf eine Taste. Für Terminal/Automatisierung: `build_all_jars.bat --no-pause`.
 
-Alle fertigen JARs liegen anschließend im Ordner `jar/`: die zwei CoroUtil-JARs, die zwei WATUT-Mod-JARs, das gemeinsame Modul und das Paper-Plugin. Ein Spiel benötigt jeweils die CoroUtil- und WATUT-JAR desselben Loaders. Das Paper-Plugin wird separat verwendet.
+Alle fertigen JARs liegen anschließend im Ordner `jar/`: die zwei CoroUtil-JARs, die zwei WATUT-Mod-JARs, das gemeinsame Modul und das Paper-Plugin. Die WATUT-JAR enthält bereits die passende CoroUtil-JAR als eingebetteten Mod. Für ein Spiel genügt deshalb die WATUT-JAR des passenden Loaders (sowie Fabric API unter Fabric). Die separaten CoroUtil-JARs werden weiterhin für andere Mods und eigenständige Installationen erstellt. Das Paper-Plugin wird separat verwendet.
 
 Die Gradle-Ausgaben sind nach Loader unter `build/fabric/` und `build/neoforge/` getrennt; veröffentlichbare Gradle-JARs liegen unter `build/libs/`. Die Zielversion ist Minecraft 26.3 mit Java 25.
 

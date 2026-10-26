@@ -1,0 +1,32 @@
+import groovy.json.JsonSlurper
+import java.util.zip.ZipFile
+
+// Exercise the actual release archive, not the development runtime classpath.
+def embeddedLoader = providers.gradleProperty('loader').getOrElse('neoforge')
+def embeddedCoroUtil = rootProject.file("../CoroUtil/build/libs/coroutil-${embeddedLoader}-${project.coroutil_version}.jar")
+
+tasks.register('verifyBundledCoroUtil') {
+    dependsOn tasks.named('jar')
+    inputs.file(tasks.named('jar', Jar).flatMap { it.archiveFile })
+    inputs.file(embeddedCoroUtil)
+    doLast {
+        def release = tasks.named('jar', Jar).get().archiveFile.get().asFile
+        new ZipFile(release).withCloseable { archive ->
+            def descriptorPath = embeddedLoader == 'fabric' ? 'fabric.mod.json' : 'META-INF/jarjar/metadata.json'
+            def descriptor = archive.getEntry(descriptorPath)
+            if (descriptor == null) throw new GradleException("Missing embedded-mod descriptor in ${release.name}")
+            def metadata = new JsonSlurper().parse(archive.getInputStream(descriptor), 'UTF-8')
+            def paths = metadata.jars.collect { embeddedLoader == 'fabric' ? it.file : it.path }
+            def nestedPath = paths.find { it.endsWith('/' + embeddedCoroUtil.name) }
+            def nested = nestedPath == null ? null : archive.getEntry(nestedPath)
+            if (nested == null) throw new GradleException("${release.name} does not register its embedded CoroUtil JAR")
+            def bundledBytes = archive.getInputStream(nested).bytes
+            if (!Arrays.equals(bundledBytes, embeddedCoroUtil.bytes)) {
+                throw new GradleException("${release.name} contains a different CoroUtil JAR than the current build")
+            }
+            logger.lifecycle("Verified embedded CoroUtil in ${release.name}")
+        }
+    }
+}
+
+tasks.named('check') { dependsOn tasks.named('verifyBundledCoroUtil') }
