@@ -1,0 +1,22 @@
+# ===================================================================
+# WATUT (What Are They Up To) - Paper Server Configuration
+# ===================================================================
+
+# Distance in blocks within which detailed GUI preview and mouse info are synced to nearby players
+distanceRequiredToShowGUIInfo: 16.0
+
+# Number of ticks of inactivity before a player is considered idle (20 ticks = 1 second)
+# Default: 1200 ticks = 60 seconds
+ticksToMarkPlayerIdle: 1200
+
+# Whether to announce idle state changes in public server chat
+announceIdleStatesInChat: false
+
+# Prevent transmitting detailed pixel/item data if you want to save network bandwidth
+dontSendDetailedGUIInfo: false
+dontSendDetailedItemInfo: false
+
+# Update checker settings (Modrinth)
+update-checker:
+  enabled: true
+  project-id: "what-are-they-up-to"

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.corosus.watut</groupId>
+        <artifactId>watut-parent</artifactId>
+        <version>26.3-1.3.0</version>
+    </parent>
+
+    <artifactId>watut-common</artifactId>
+    <packaging>jar</packaging>
+
+    <name>What Are They Up To (Common)</name>
+    <description>Shared protocol definitions, network channels, and data structures for WATUT</description>
+
+    <dependencies>
+        <!-- Common module has zero third-party dependencies for maximum portability -->
+    </dependencies>
+</project>

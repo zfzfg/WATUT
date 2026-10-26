@@ -31,3 +31,7 @@ runServer
 *.class
 *.war
 *.ear
+
+# maven
+target/
+.flattened-pom.xml

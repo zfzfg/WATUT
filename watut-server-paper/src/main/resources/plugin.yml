@@ -1,0 +1,15 @@
+name: WhatAreTheyUpTo
+version: '${project.version}'
+main: com.corosus.watut.paper.WatutPaperPlugin
+api-version: '1.21'
+author: Corosus
+description: Server plugin support for the WATUT client mod (Paper / Java 25)
+commands:
+  watut:
+    description: Main command for WATUT plugin
+    permission: watut.admin
+    usage: /<command> [reload|version]
+permissions:
+  watut.admin:
+    description: Permission to reload WATUT plugin and check version
+    default: op
