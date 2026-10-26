@@ -19,12 +19,19 @@ import java.util.UUID;
 public class WatutModFabricClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
+        com.corosus.watut.client.screen.ScreenParticleRenderer.configure((state,features) -> {
+            var mc=net.minecraft.client.Minecraft.getInstance();
+            return new net.minecraft.client.gui.render.GuiRenderer(state,features,List.of(
+                new net.minecraft.client.gui.render.pip.GuiEntityRenderer(mc.getEntityRenderDispatcher()),
+                new net.minecraft.client.gui.render.pip.GuiSkinRenderer(),new net.minecraft.client.gui.render.pip.GuiBookModelRenderer(),
+                new net.minecraft.client.gui.render.pip.GuiBannerResultRenderer(mc.getAtlasManager()),new net.minecraft.client.gui.render.pip.GuiProfilerChartRenderer()));
+        });
 		/*ClientPlayNetworking.registerGlobalReceiver(WatutNetworkingFabric.NBT_PACKET_ID, (client, handler, buf, responseSender) -> {
 			CompoundTag nbt = buf.readNbt();
 			client.execute(() -> {
 				try {
 					if (nbt.contains(WatutNetworking.NBTDataPlayerUUID)) {
-						UUID uuid = UUID.fromString(nbt.getString(WatutNetworking.NBTDataPlayerUUID));
+						UUID uuid = UUID.fromString(nbt.getStringOr(WatutNetworking.NBTDataPlayerUUID, ""));
 						WatutMod.getPlayerStatusManagerClient().receiveAny(uuid, nbt);
 					} else if (nbt.contains(WatutNetworking.NBTDataServerConfig)) {
 						WatutMod.getPlayerStatusManagerClient().receiveServerConfig(nbt);
@@ -47,7 +54,7 @@ public class WatutModFabricClient implements ClientModInitializer {
 			ctx.client().execute(() -> {
 				try {
 					if (nbt.contains(WatutNetworking.NBTDataPlayerUUID)) {
-						UUID uuid = UUID.fromString(nbt.getString(WatutNetworking.NBTDataPlayerUUID));
+						UUID uuid = UUID.fromString(nbt.getStringOr(WatutNetworking.NBTDataPlayerUUID, ""));
 						WatutMod.getPlayerStatusManagerClient().receiveAny(uuid, nbt);
 					} else if (nbt.contains(WatutNetworking.NBTDataServerConfig)) {
 						WatutMod.getPlayerStatusManagerClient().receiveServerConfig(nbt);
@@ -63,11 +70,6 @@ public class WatutModFabricClient implements ClientModInitializer {
 				}
 			});
 		});
-
-		List<ParticleRenderType> render_order = new ArrayList<>();
-		render_order.addAll(ParticleEngine.RENDER_ORDER);
-		render_order.add(ParticleRotating.PARTICLE_SHEET_TRANSLUCENT_NO_FACE_CULL);
-		ParticleEngine.RENDER_ORDER = render_order;
 	}
 
 }

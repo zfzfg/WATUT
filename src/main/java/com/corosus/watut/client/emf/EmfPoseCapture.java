@@ -6,8 +6,8 @@ import com.corosus.watut.WatutMod;
 import com.corosus.watut.config.ConfigClient;
 import com.corosus.watut.config.ConfigServerControlledSyncedToClient;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
-import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import org.joml.Vector3f;
@@ -26,7 +26,7 @@ public final class EmfPoseCapture {
     private EmfPoseCapture() {
     }
 
-    public static void capture(PlayerModel<?> model, LivingEntity entity) {
+    public static void capture(PlayerModel model, LivingEntity entity) {
         if (!(entity instanceof Player player)) {
             return;
         }
@@ -90,7 +90,7 @@ public final class EmfPoseCapture {
      * Same gates as {@code PlayerStatusManagerClient.setupRotationsHook}: master flags,
      * the inventory paper doll, and players WATUT is not animating.
      */
-    private static boolean isPosing(Player player, PlayerModel<?> model) {
+    private static boolean isPosing(Player player, PlayerModel model) {
         if (!ConfigClient.showPlayerAnimations || !ConfigServerControlledSyncedToClient.showPlayerAnimations) {
             return false;
         }
@@ -102,6 +102,6 @@ public final class EmfPoseCapture {
             return false;
         }
         Minecraft mc = Minecraft.getInstance();
-        return !(player == mc.player && mc.screen instanceof EffectRenderingInventoryScreen && player.isAlive());
+        return !(player == mc.player && mc.gui.screen() instanceof InventoryScreen && player.isAlive());
     }
 }

@@ -1,57 +1,85 @@
 @echo off
 setlocal EnableExtensions
 set "ROOT=%~dp0"
-set "FAILED=0"
-
-rem Select an installed JDK 25 so Gradle and Maven use the same compiler.
+set "NO_PAUSE=0"
+if /i "%~1"=="--no-pause" set "NO_PAUSE=1"
 set "JAVA_HOME25="
-if defined JAVA_HOME if exist "%JAVA_HOME%\bin\javac.exe" (
-    for /f "tokens=2" %%V in ('"%JAVA_HOME%\bin\javac.exe" -version 2^>^&1') do echo %%V| findstr /b /r "25\." >nul && set "JAVA_HOME25=%JAVA_HOME%"
-)
-if not defined JAVA_HOME25 for /d %%J in ("C:\Program Files\Eclipse Adoptium\jdk-25*") do if not defined JAVA_HOME25 set "JAVA_HOME25=%%~fJ"
-if not defined JAVA_HOME25 for /d %%J in ("C:\Program Files\Microsoft\jdk-25*") do if not defined JAVA_HOME25 set "JAVA_HOME25=%%~fJ"
+
+rem Use one validated JDK for every Gradle and Maven invocation.
+if defined JAVA_HOME call :tryJdk "%JAVA_HOME%"
+if defined JAVA_HOME_25_X64 call :tryJdk "%JAVA_HOME_25_X64%"
+for /d %%J in ("%ProgramFiles%\Eclipse Adoptium\jdk-25*" "%ProgramFiles%\Microsoft\jdk-25*" "%ProgramFiles%\Java\jdk-25*" "%USERPROFILE%\.jdks\*25*") do call :tryJdk "%%~fJ"
 if not defined JAVA_HOME25 (
-    echo ERROR: JDK 25 was not found. Set JAVA_HOME to a JDK 25 installation and retry.
-    exit /b 2
+    echo ERROR: JDK 25 was not found. Set JAVA_HOME to a JDK 25 installation.
+    goto failed
 )
 set "JAVA_HOME=%JAVA_HOME25%"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
+where mvn >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: Maven was not found on PATH. Install Maven to build the Paper module.
+    goto failed
+)
+if not exist "%ROOT%..\CoroUtil\gradlew.bat" (
+    echo ERROR: Expected the CoroUtil repository next to the WATUT folder.
+    goto failed
+)
 echo Using JDK: %JAVA_HOME%
 
-echo.
-echo [1/5] Building CoroUtil Fabric JAR
-pushd "%ROOT%..\CoroUtil"
-call gradlew.bat -Ploader=fabric build --no-daemon
-if errorlevel 1 set "FAILED=1"
+for /f "tokens=2 delims==" %%V in ('findstr /b "coroutil_version=" "%ROOT%gradle.properties"') do set "COROUTIL_VERSION=%%V"
+for /f "tokens=2 delims==" %%V in ('findstr /b "mod_version=" "%ROOT%gradle.properties"') do set "WATUT_VERSION=%%V"
 
 echo.
-echo [2/5] Building CoroUtil NeoForge JAR
-call gradlew.bat -Ploader=neoforge build --no-daemon
-if errorlevel 1 set "FAILED=1"
-popd
+echo [1/5] CoroUtil Fabric
+call :gradle "%ROOT%..\CoroUtil" fabric
+if errorlevel 1 goto failed
+echo.
+echo [2/5] CoroUtil NeoForge
+call :gradle "%ROOT%..\CoroUtil" neoforge
+if errorlevel 1 goto failed
+echo.
+echo [3/5] WATUT Fabric
+call :gradle "%ROOT%" fabric
+if errorlevel 1 goto failed
+echo.
+echo [4/5] WATUT NeoForge
+call :gradle "%ROOT%" neoforge
+if errorlevel 1 goto failed
+echo.
+echo [5/5] WATUT Paper and Common
+call mvn -f "%ROOT%pom.xml" clean package
+if errorlevel 1 goto failed
+
+if not exist "%ROOT%jar" mkdir "%ROOT%jar"
+copy /y "%ROOT%..\CoroUtil\build\libs\coroutil-fabric-%COROUTIL_VERSION%.jar" "%ROOT%jar\" >nul
+if errorlevel 1 goto failed
+copy /y "%ROOT%..\CoroUtil\build\libs\coroutil-neoforge-%COROUTIL_VERSION%.jar" "%ROOT%jar\" >nul
+if errorlevel 1 goto failed
+copy /y "%ROOT%watut-common\target\watut-common-%WATUT_VERSION%.jar" "%ROOT%jar\" >nul
+if errorlevel 1 goto failed
 
 echo.
-echo [3/5] Building WATUT Fabric JAR
-pushd "%ROOT%"
-call gradlew.bat -Ploader=fabric build --no-daemon
-if errorlevel 1 set "FAILED=1"
+echo All builds and tests succeeded. All JARs are in:
+echo %ROOT%jar
+if "%NO_PAUSE%"=="0" pause
+exit /b 0
 
+:failed
 echo.
-echo [4/5] Building WATUT NeoForge JAR
-call gradlew.bat -Ploader=neoforge build --no-daemon
-if errorlevel 1 set "FAILED=1"
-
-echo.
-echo [5/5] Building WATUT Paper JARs
-call mvn -f "%ROOT%pom.xml" package
-if errorlevel 1 set "FAILED=1"
-popd
-
-if "%FAILED%"=="0" (
-    echo.
-    echo All CoroUtil and WATUT JAR builds completed successfully.
-    exit /b 0
-)
-echo.
-echo One or more builds failed. See the messages above; later build steps were still attempted.
+echo Build failed. The first failing step is shown above.
+if "%NO_PAUSE%"=="0" pause
 exit /b 1
+
+:gradle
+pushd "%~1"
+if errorlevel 1 exit /b 1
+call gradlew.bat -Ploader=%~2 clean build --no-daemon --console=plain
+set "BUILD_RESULT=%ERRORLEVEL%"
+popd
+exit /b %BUILD_RESULT%
+
+:tryJdk
+if defined JAVA_HOME25 exit /b 0
+if not exist "%~1\bin\javac.exe" exit /b 0
+for /f "tokens=2" %%V in ('"%~1\bin\javac.exe" -version 2^>^&1') do for /f "tokens=1 delims=.-" %%M in ("%%V") do if "%%M"=="25" set "JAVA_HOME25=%~1"
+exit /b 0

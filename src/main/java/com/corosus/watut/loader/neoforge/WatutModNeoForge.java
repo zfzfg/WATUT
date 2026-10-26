@@ -28,7 +28,7 @@ public class WatutModNeoForge extends WatutMod {
         NeoForge.EVENT_BUS.addListener(this::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(this::onPlayerJoin);
 
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment.getDist().isClient()) {
             ClientEvents clientEvents = new ClientEvents();
             container.getEventBus().addListener(clientEvents::getRegisteredParticles);
             NeoForge.EVENT_BUS.addListener(clientEvents::onRegisterCommandsClient);
@@ -74,6 +74,6 @@ public class WatutModNeoForge extends WatutMod {
 
     @Override
     public float getFarPlane() {
-        return ClientHooks.getGuiFarPlane();
+        return 11000F;
     }
 }

@@ -1,20 +1,27 @@
 package com.corosus.watut.mixin.client;
 
 import com.corosus.watut.WatutMod;
-import net.minecraft.client.model.EntityModel;
-import net.minecraft.client.model.PlayerModel;
-import net.minecraft.world.entity.LivingEntity;
+import com.corosus.watut.client.emf.EmfPoseCapture;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(PlayerModel.class)
-public abstract class SetupRotationsInject<T extends LivingEntity> {
-
-    @Inject(method = "setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V", at = @At(value = "TAIL"))
-    public void setupAnim(T pEntity, float pLimbSwing, float pLimbSwingAmount, float pAgeInTicks, float pNetHeadYaw, float pHeadPitch, CallbackInfo ci) {
-        WatutMod.getPlayerStatusManagerClient().setupRotationsHook((EntityModel)(Object)this, pEntity, pLimbSwing, pLimbSwingAmount, pAgeInTicks, pNetHeadYaw, pHeadPitch);
+public abstract class SetupRotationsInject {
+  @Inject(
+      method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",
+      at = @At("RETURN"))
+  private void watut$pose(AvatarRenderState state, CallbackInfo ci) {
+    var level = Minecraft.getInstance().level;
+    if (level != null && level.getEntity(state.id) instanceof Player player) {
+      PlayerModel model = (PlayerModel) (Object) this;
+      WatutMod.getPlayerStatusManagerClient()
+          .setupRotationsHook(model, player, 0, 0, state.ageInTicks, 0, 0);
+      EmfPoseCapture.capture(model, player);
     }
-
+  }
 }

@@ -1,29 +1,35 @@
 package com.corosus.watut.mixin.client;
 
 import com.corosus.watut.PlayerStatusManagerClient;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Camera;
-import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.state.level.ParticlesRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.function.Predicate;
-
-@Mixin(net.minecraft.client.particle.ParticleEngine.class)
+@Mixin(ParticleEngine.class)
 public abstract class ParticleEngineMixin {
+  @Inject(method = "tick", at = @At("TAIL"))
+  private void watut$tick(CallbackInfo ci) {
+    PlayerStatusManagerClient.getParticleEngine().tick();
+  }
 
-    @Inject(method = "render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;Ljava/util/function/Predicate;)V", at = @At("TAIL"), remap = false)
-    private void render(LightTexture lightTexture, Camera camera, float partialTick, Frustum frustum, Predicate<ParticleRenderType> renderTypePredicate, CallbackInfo ci) {
-        PlayerStatusManagerClient.getParticleEngine().render(lightTexture, camera, partialTick);
-    }
+  @Inject(method = "extract", at = @At("TAIL"))
+  private void watut$extract(
+      ParticlesRenderState state,
+      Frustum frustum,
+      Camera camera,
+      float partialTick,
+      CallbackInfo ci) {
+    PlayerStatusManagerClient.getParticleEngine().extract(state, camera, partialTick);
+  }
 
-    @Inject(method = "tick", at = @At("TAIL"))
-    private void tick(CallbackInfo ci) {
-        PlayerStatusManagerClient.getParticleEngine().tick();
-    }
+  @Inject(method = "setLevel", at = @At("HEAD"))
+  private void watut$level(ClientLevel level, CallbackInfo ci) {
+    PlayerStatusManagerClient.getParticleEngine().setLevel(level);
+  }
 }

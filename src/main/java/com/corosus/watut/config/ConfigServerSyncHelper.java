@@ -65,15 +65,15 @@ public class ConfigServerSyncHelper {
                     continue;
                 }
                 if (value == int.class) {
-                    setFieldValue(name, nbt.getInt(name));
+                    setFieldValue(name, nbt.getIntOr(name, 0));
                 } else if (value == float.class) {
-                    setFieldValue(name, nbt.getFloat(name));
+                    setFieldValue(name, nbt.getFloatOr(name, 0F));
                 } else if (value == double.class) {
-                    setFieldValue(name, nbt.getDouble(name));
+                    setFieldValue(name, nbt.getDoubleOr(name, 0D));
                 } else if (value == String.class) {
-                    setFieldValue(name, nbt.getString(name));
+                    setFieldValue(name, nbt.getStringOr(name, ""));
                 } else if (value == boolean.class) {
-                    setFieldValue(name, nbt.getBoolean(name));
+                    setFieldValue(name, nbt.getBooleanOr(name, false));
                 }
             }
         } catch (Exception e) {

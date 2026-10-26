@@ -78,7 +78,7 @@ public class WatutNetworkingNeoForge extends WatutNetworking {
 
     @Override
     public void clientSendToServer(CompoundTag data) {
-        PacketDistributor.sendToServer(new PacketNBTFromClient(data));
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new PacketNBTFromClient(data));
     }
 
     @Override

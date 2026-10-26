@@ -1,11 +1,9 @@
 {
-  "required": false,
+  "required": true,
   "package": "com.corosus.watut.mixin",
   "compatibilityLevel": "JAVA_25",
-  "refmap": "watut.refmap.json",
   "client": [
     "client.SetupRotationsInject",
-    "client.EmfPoseCaptureInject",
     "client.RenderPingIconInject",
     "client.ScreenRenderBackground",
     "client.ScreenRenderWithTooltip",
@@ -16,8 +14,13 @@
     "client.TextureAtlasUpload",
     "client.PostChainResize",
     "client.GameRendererReloadShaders",
-    "client.ParticleEngineMixinFabric",
-    "client.NativeImageAccessor"
+    "client.ParticleEngineMixin",
+    "client.NativeImageAccessor",
+    "client.ScreenTextAccess$Chat",
+    "client.ScreenTextAccess$Book",
+    "client.ScreenTextAccess$Sign",
+    "client.ScreenTextAccess$Command",
+    "client.ScreenTextAccess$Text"
   ],
   "mixins": [
     "PlayerLoggedIn",
@@ -26,7 +29,7 @@
     "BlockBehaviorUse"
   ],
   "injectors": {
-    "defaultRequire": 0
+    "defaultRequire": 1
   },
   "minVersion": "0.8"
 }

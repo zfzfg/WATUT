@@ -14,7 +14,7 @@ public class ByteBufferProcessor {
     public ByteBufferProcessor(Function<ByteBuffer, ByteBuffer> processingFunction) {
         this.inputQueue = new LinkedBlockingQueue<>();
         this.outputQueue = new LinkedBlockingQueue<>();
-        this.executorService = Executors.newSingleThreadExecutor();
+        this.executorService = Executors.newSingleThreadExecutor(task -> { Thread thread=new Thread(task,"WATUT GUI compression"); thread.setDaemon(true); return thread; });
         this.processingFunction = processingFunction;
         this.isRunning = true;
         

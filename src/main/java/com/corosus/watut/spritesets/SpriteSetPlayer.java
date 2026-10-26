@@ -32,6 +32,8 @@ public class SpriteSetPlayer implements SpriteSet {
         return list.get(0);
     }
 
+    @Override public TextureAtlasSprite first() { return list.getFirst(); }
+
     public void setList(List<TextureAtlasSprite> list) {
         this.list = list;
     }

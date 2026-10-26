@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MouseHandler.class)
 public abstract class MouseHandlerOnPress {
 
-    @Inject(method = "onPress", at = @At("TAIL"))
-    private void onPress(long pWindowPointer, int pButton, int pAction, int pModifiers, CallbackInfo info) {
+    @Inject(method = "onButton", at = @At("TAIL"))
+    private void onPress(long window, net.minecraft.client.input.MouseButtonInfo button, int pAction, CallbackInfo info) {
         WatutMod.getPlayerStatusManagerClient().onMouse(pAction != 0);
     }
 }

@@ -1,14 +1,8 @@
 package com.corosus.watut.client.screen;
 
 import com.corosus.watut.PlayerStatusManagerClient;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.level.Level;
@@ -47,31 +41,9 @@ public class ScreenData {
     private Screen lastScreen;
 
     public void initClient() {
-
-        this.particleRenderType = new ParticleRenderType() {
-            public @Nullable BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
-                //oculus breaks our shader for some reason
-                if (RenderHelper.isShadersEnabled()) {
-                    RenderSystem.setShader(GameRenderer::getParticleShader);
-                } else {
-                    RenderSystem.setShader(() -> PlayerStatusManagerClient.particle);
-                }
-                RenderSystem._setShaderTexture(0, getImage().getId());
-
-                RenderSystem.depthMask(true);
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                RenderSystem.disableCull();
-                return tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
-            }
-
-            public String toString() {
-                return "DYNAMIC_TEXTURE";
-            }
-        };
-
-        //WatutMod.instance().addParticleRenderType(particleRenderType);
-
+        if (particleRenderType == null) {
+            particleRenderType = new ParticleRenderType("watut:screen/" + java.util.UUID.randomUUID(), "watut_screen");
+        }
     }
 
     public ByteBuffer getTexturePixelData() {
@@ -169,12 +141,17 @@ public class ScreenData {
     }
 
     public void setImage(DynamicTexture image) {
+        initClient();
         this.image = image;
+        net.minecraft.client.Minecraft.getInstance().getTextureManager().register(
+            net.minecraft.resources.Identifier.parse(particleRenderType.name()), image);
     }
 
     public void closeImage() {
         if (this.image != null) {
-            this.image.close();
+            net.minecraft.client.Minecraft.getInstance().getTextureManager().release(
+                net.minecraft.resources.Identifier.parse(particleRenderType.name()));
+            this.image = null;
         }
     }
 

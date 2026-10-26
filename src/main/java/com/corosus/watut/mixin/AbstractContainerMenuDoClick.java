@@ -4,7 +4,7 @@ import com.corosus.watut.WatutMod;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,16 +19,16 @@ public abstract class AbstractContainerMenuDoClick {
     public final NonNullList<Slot> slots = NonNullList.create();
 
     @Inject(method = "doClick", at = @At("HEAD"))
-    private void doClickPre(int pSlotId, int pButton, ClickType pClickType, Player pPlayer, CallbackInfo ci) {
+    private void doClickPre(int pSlotId, int pButton, ContainerInput pContainerInput, Player pPlayer, CallbackInfo ci) {
         if (!pPlayer.level().isClientSide()) {
-            WatutMod.getPlayerStatusManagerServer().doClickPre((AbstractContainerMenu)((Object)this), pSlotId, pButton, pClickType, pPlayer);
+            WatutMod.getPlayerStatusManagerServer().doClickPre((AbstractContainerMenu)((Object)this), pSlotId, pButton, pContainerInput, pPlayer);
         }
     }
 
     @Inject(method = "doClick", at = @At("TAIL"))
-    private void doClickPost(int pSlotId, int pButton, ClickType pClickType, Player pPlayer, CallbackInfo ci) {
+    private void doClickPost(int pSlotId, int pButton, ContainerInput pContainerInput, Player pPlayer, CallbackInfo ci) {
         if (!pPlayer.level().isClientSide()) {
-            WatutMod.getPlayerStatusManagerServer().doClickPost((AbstractContainerMenu)((Object)this), pSlotId, pButton, pClickType, pPlayer);
+            WatutMod.getPlayerStatusManagerServer().doClickPost((AbstractContainerMenu)((Object)this), pSlotId, pButton, pContainerInput, pPlayer);
         }
     }
 }

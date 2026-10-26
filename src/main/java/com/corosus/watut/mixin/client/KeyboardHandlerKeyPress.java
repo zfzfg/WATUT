@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class KeyboardHandlerKeyPress {
 
     @Inject(method = "keyPress", at = @At("TAIL"))
-    private void keyPress(long pWindowPointer, int pKey, int pScanCode, int pAction, int pModifiers, CallbackInfo info) {
+    private void keyPress(CallbackInfo info) {
         WatutMod.getPlayerStatusManagerClient().onKey();
     }
 }
