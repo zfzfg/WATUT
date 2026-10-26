@@ -38,6 +38,12 @@ public class ConfigClient implements IConfigCategory {
     @ConfigComment("Enables or disables the non typing animations used when showing the open Gui, such as head looking, arms moving up, arms pointing and clicking")
     public static boolean showPlayerAnimation_Gui = true;
 
+    @ConfigComment("When EMF Compat Core is installed, re-apply GUI, typing and idle poses after Entity Model Features animates the player. Does nothing if that mod is absent. Ignored while emf_compat_watut is also installed.")
+    public static boolean emfCompatibility = true;
+
+    @ConfigComment("With EMF compatibility on, keep WATUT arm reach attached to the moving torso. Off keeps arm rotation only and leaves walk position to the resource pack.")
+    public static boolean emfArmBodyFollow = true;
+
     @ConfigComment("Show any Gui they're using that isn't chat typing related in world")
     public static boolean showPlayerActiveNonChatGui = true;
 

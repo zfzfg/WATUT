@@ -1,1 +1,3 @@
 Workaround flickering issue that is still happening on fabric, set default to not constantly update GUI
+
+Hand GUI, typing and idle poses to EMF Compat Core after the player model animates, so those poses survive Entity Model Features resource packs. Needs the separate EMF Compat Core mod (Fabric 26.3). Skipped when emf_compat_watut is also installed. Toggle with emfCompatibility and emfArmBodyFollow in the client config.

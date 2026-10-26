@@ -5,6 +5,7 @@
   "refmap": "watut.refmap.json",
   "client": [
     "client.SetupRotationsInject",
+    "client.EmfPoseCaptureInject",
     "client.RenderPingIconInject",
     "client.ScreenRenderBackground",
     "client.ScreenRenderWithTooltip",
